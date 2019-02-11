@@ -1,9 +1,57 @@
 pragma solidity ^0.5.0;
 
-import "./Token.sol";
-import "./ERC20.sol";
-import "./ERC223.sol";
-import "./ERC223ReceivingContract.sol";
+interface ERC20 {
+    function transferFrom(address _from, address _to, uint _value) external returns (bool);
+    function approve(address _spender, uint _value) external returns (bool);
+    function allowance(address _owner, address _spender) external view returns (uint);
+    event Approval(address indexed _owner, address indexed _spender, uint _value);
+}
+
+
+interface ERC223 {
+    function transfer(address _to, uint _value, bytes calldata _data) external returns (bool);
+    event Transfer(address indexed from, address indexed to, uint value, bytes indexed data);
+}
+
+contract ERC223ReceivingContract {
+    function tokenFallback(address _from, uint _value, bytes memory _data) public;
+}
+
+contract Token {
+    string internal _symbol;
+    string internal _name;
+    uint8 internal _decimals;
+    uint internal _totalSupply = 1000;
+    mapping (address => uint) internal _balanceOf;
+    mapping (address => mapping (address => uint)) internal _allowances;
+    
+    constructor(string memory symbol, string memory name, uint8 decimals, uint totalSupply) public {
+        _symbol = symbol;
+        _name = name;
+        _decimals = decimals;
+        _totalSupply = totalSupply;
+    }
+    
+    function name() public view returns (string memory) {
+        return _name;
+    }
+    
+    function symbol() public view returns (string memory)  {
+        return _symbol;
+    }
+    
+    function decimals() public view returns (uint8) {
+        return _decimals;
+    }
+    
+    function totalSupply() public view returns (uint) {
+        return _totalSupply;
+    }
+    
+    function balanceOf(address _addr) public view returns (uint);
+    function transfer(address _to, uint _value) public returns (bool);
+    event Transfer(address indexed _from, address indexed _to, uint _value);
+}
 
 contract KPay is Token("KPY", "KPay", 18, 1000000), ERC20, ERC223 {
     address public creator;
@@ -20,8 +68,6 @@ contract KPay is Token("KPY", "KPay", 18, 1000000), ERC20, ERC223 {
     mapping (string => IdentityData) identities;
     mapping (string => uint) usageCount;
 
-    mapping (string => bool) isIdentityVerified;
-
     function strConcat(string memory _a, string memory _b) public pure returns (string memory){
         bytes memory _ba = bytes(_a);
         bytes memory _bb = bytes(_b);
@@ -34,28 +80,17 @@ contract KPay is Token("KPY", "KPay", 18, 1000000), ERC20, ERC223 {
         return string(bab);
     }
     
+    
     function CreateNewIdentity(string memory identifier, string memory pubKey) public returns (bool){
         if (_balanceOf[msg.sender] > 1) {
             _balanceOf[creator] += 1;
             _balanceOf[msg.sender] -= 1;
             identities[identifier].pubKey = pubKey;
-            isIdentityVerified[identifier] = false;
             return true;
         }
         return false;
     }
     
-    function VerifyIdentity(string memory identifier) public returns (bool) {
-        // Add check if the service address
-        isIdentityVerified[identifier] = true;
-        return true;
-    }
-
-    function IsIdentityVerified(string memory identifier) public view returns (bool) {
-        return isIdentityVerified[identifier];
-        return true; 
-    }
-
     function GetIdentityJson(string memory identifier) public view returns (string memory) {
         string memory _pubKey = identities[identifier].pubKey;
         string memory jsonStr = "{pubKey: ";
@@ -106,7 +141,7 @@ contract KPay is Token("KPY", "KPay", 18, 1000000), ERC20, ERC223 {
         }
         return false;
     }
-    
+
     function isContract(address _addr) public view returns (bool) {
         uint codeSize;
         assembly {
