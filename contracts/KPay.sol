@@ -52,8 +52,7 @@ contract KPay is Token("KPY", "KPay", 18, 1000000), ERC20, ERC223 {
     }
 
     function IsIdentityVerified(string memory identifier) public view returns (bool) {
-        return isIdentityVerified[identifier];
-        return true; 
+        return isIdentityVerified[identifier]; 
     }
 
     function GetIdentityJson(string memory identifier) public view returns (string memory) {
