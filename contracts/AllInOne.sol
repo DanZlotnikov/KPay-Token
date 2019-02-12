@@ -52,7 +52,7 @@ contract ERC223ReceivingContract {
     function tokenFallback(address _from, uint _value, bytes memory _data) public;
 }
 
-contract KPay is Token("KPY", "KPay", 18, 1000000), ERC20, ERC223 {
+contract KPay is Token("KPY", "KPay", 18, 1000000000000000000000000), ERC20, ERC223 {
     address public creator;
     
     constructor() public {
@@ -61,7 +61,7 @@ contract KPay is Token("KPY", "KPay", 18, 1000000), ERC20, ERC223 {
     }
     
     struct IdentityData {
-        string pubKey;
+        string pubKeys;
     }
 
     mapping (string => IdentityData) identities;
@@ -69,7 +69,7 @@ contract KPay is Token("KPY", "KPay", 18, 1000000), ERC20, ERC223 {
 
     mapping (string => bool) isIdentityVerified;
 
-    function strConcat(string memory _a, string memory _b) public pure returns (string memory){
+    function strConcat(string memory _a, string memory _b) public pure returns (string memory) {
         bytes memory _ba = bytes(_a);
         bytes memory _bb = bytes(_b);
         string memory ab = new string(_ba.length + _bb.length);
@@ -81,13 +81,25 @@ contract KPay is Token("KPY", "KPay", 18, 1000000), ERC20, ERC223 {
         return string(bab);
     }
     
-    function CreateNewIdentity(string memory identifier, string memory pubKey) public returns (bool){
-        if (_balanceOf[msg.sender] > 1) {
-            _balanceOf[creator] += 1;
-            _balanceOf[msg.sender] -= 1;
-            identities[identifier].pubKey = pubKey;
-            isIdentityVerified[identifier] = false;
-            return true;
+    function CreateNewIdentity(string memory identifier, string memory pubKey) public returns (bool) {
+        bytes memory bytesPubKeys = bytes(identities[identifier].pubKeys);
+        if (bytesPubKeys.length == 0) {
+            if (_balanceOf[msg.sender] > 1) {
+                _balanceOf[creator] += 1;
+                _balanceOf[msg.sender] -= 1;
+                identities[identifier].pubKeys = pubKey;
+                isIdentityVerified[identifier] = false;
+                return true;
+            }
+        }
+        else {
+                if (_balanceOf[msg.sender] > 1) {
+                    _balanceOf[creator] += 1;
+                    _balanceOf[msg.sender] -= 1;
+                    identities[identifier].pubKeys = strConcat(identities[identifier].pubKeys, ", ");
+                    identities[identifier].pubKeys = strConcat(identities[identifier].pubKeys, pubKey);
+                    return true;
+            }
         }
         return false;
     }
@@ -99,13 +111,13 @@ contract KPay is Token("KPY", "KPay", 18, 1000000), ERC20, ERC223 {
     }
 
     function IsIdentityVerified(string memory identifier) public view returns (bool) {
-        return isIdentityVerified[identifier];
+        return isIdentityVerified[identifier]; 
     }
 
     function GetIdentityJson(string memory identifier) public view returns (string memory) {
-        string memory _pubKey = identities[identifier].pubKey;
-        string memory jsonStr = "{pubKey: ";
-        jsonStr = strConcat(jsonStr, _pubKey);
+        string memory _pubKeys = identities[identifier].pubKeys;
+        string memory jsonStr = "{pubKeys: ";
+        jsonStr = strConcat(jsonStr, _pubKeys);
         jsonStr = strConcat(jsonStr, "}");
         return jsonStr;
     } 
